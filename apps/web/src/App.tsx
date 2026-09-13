@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { 
   Store, ShoppingCart, Package, LogOut, 
   Search, Plus, Minus, Trash2, CheckCircle2, 
-  Receipt, ChevronRight, BarChart3, PlusCircle, Wrench, Smartphone, ShoppingBag, DollarSign
+  Receipt, ChevronRight, BarChart3, PlusCircle, Wrench, Smartphone, ShoppingBag, DollarSign,
+  Printer, Share2, Users, Calendar, BadgeCheck, CreditCard, UserPlus, Phone, MapPin, User
 } from 'lucide-react';
 
+// --- TYPES ---
 interface Product {
   id: string;
   name: string;
@@ -22,6 +24,34 @@ interface CartItem {
   qty: number;
 }
 
+interface Customer {
+  firstName: string;
+  lastName: string;
+  phone: string;
+  address: string;
+}
+
+interface Invoice {
+  id: string;
+  customer: Customer;
+  items: CartItem[];
+  total: number;
+  method: string;
+  date: string;
+  time: string;
+}
+
+interface Employee {
+  id: string;
+  matricule: string;
+  firstName: string;
+  lastName: string;
+  hireDate: string;
+  salary: number;
+  role: string;
+  payments: { [key: string]: boolean }; // ex: { "2026-09": true }
+}
+
 interface Expense {
   id: string;
   title: string;
@@ -30,66 +60,61 @@ interface Expense {
   date: string;
 }
 
-interface Sale {
-  id: string;
-  client: string;
-  total: number;
-  method: string;
-  time: string;
-}
-
 export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
   const [userRole, setUserRole] = useState<'ADMIN' | 'CASHIER'>('ADMIN');
-  const [activeTab, setActiveTab] = useState<'POS' | 'DASHBOARD' | 'INVENTORY' | 'EXPENSES' | 'SALES'>('POS');
+  const [activeTab, setActiveTab] = useState<'POS' | 'DASHBOARD' | 'INVENTORY' | 'EXPENSES' | 'SALES' | 'HR'>('POS');
 
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [loginError, setLoginError] = useState<string>('');
-
-  // Secteur d'activité de la boutique
   const [businessType, setBusinessType] = useState<'TELEPHONY' | 'HARDWARE' | 'GENERAL'>('TELEPHONY');
 
-  // Produits
+  // --- STOCKS & PRODUITS ---
   const [products, setProducts] = useState<Product[]>([
     { id: '1', name: 'iPhone 13 Pro 128GB', price: 420000, buyPrice: 350000, stock: 5, category: 'Téléphones', code: 'TEL-001' },
     { id: '2', name: 'Chargeur Rapide 20W USB-C', price: 12000, buyPrice: 6000, stock: 25, category: 'Accessoires', code: 'ACC-002' },
     { id: '3', name: 'Écouteurs AirPods Pro v2', price: 85000, buyPrice: 65000, stock: 8, category: 'Accessoires', code: 'ACC-003' },
-    { id: '4', name: 'Ciment SOCOCIM 50kg', price: 4500, buyPrice: 3900, stock: 120, category: 'Matériaux', code: 'QUI-001' },
-    { id: '5', name: 'Peinture Mat Blanche 20L', price: 28000, buyPrice: 21000, stock: 14, category: 'Peinture', code: 'QUI-002' },
   ]);
 
-  // Formulaire Nouveau Produit
-  const [newProdName, setNewProdName] = useState<string>('');
-  const [newProdCategory, setNewProdCategory] = useState<string>('');
-  const [newProdPrice, setNewProdPrice] = useState<string>('');
-  const [newProdBuyPrice, setNewProdBuyPrice] = useState<string>('');
-  const [newProdStock, setNewProdStock] = useState<string>('');
-  const [newProdCode, setNewProdCode] = useState<string>('');
+  // Formulaire Produit
+  const [newProdName, setNewProdName] = useState('');
+  const [newProdCategory, setNewProdCategory] = useState('');
+  const [newProdPrice, setNewProdPrice] = useState('');
+  const [newProdBuyPrice, setNewProdBuyPrice] = useState('');
+  const [newProdStock, setNewProdStock] = useState('');
+  const [newProdCode, setNewProdCode] = useState('');
 
-  // Dépenses de la boutique
-  const [expenses, setExpenses] = useState<Expense[]>([
-    { id: 'DEP-101', title: 'Facture Senelec Électricité', amount: 45000, category: 'Électricité', date: '10/09/2026' },
-    { id: 'DEP-102', title: 'Restauration équipe caisse', amount: 12000, category: 'Repas', date: '11/09/2026' },
-    { id: 'DEP-103', title: 'Achat serrure & peinture comptoir', amount: 18000, category: 'Réfection', date: '08/09/2026' },
-  ]);
-
-  // Formulaire Nouvelle Dépense
-  const [expTitle, setExpTitle] = useState<string>('');
-  const [expAmount, setExpAmount] = useState<string>('');
-  const [expCategory, setExpCategory] = useState<string>('Électricité');
-
-  // Recherche & Panier
+  // --- PANIER & CLIENT ---
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [paymentSuccess, setPaymentSuccess] = useState<boolean>(false);
+  const [customer, setCustomer] = useState<Customer>({ firstName: '', lastName: '', phone: '', address: '' });
+  const [currentInvoice, setCurrentInvoice] = useState<Invoice | null>(null);
 
-  // Historique Ventes
-  const [sales, setSales] = useState<Sale[]>([
-    { id: 'FAC-2026-091', client: 'Client Passage', total: 420000, method: 'Wave', time: '14:20' },
-    { id: 'FAC-2026-090', client: 'Client Passage', total: 24000, method: 'Espèces', time: '13:45' },
+  // --- EMPLOYES (RH - Exclusif Admin) ---
+  const [employees, setEmployees] = useState<Employee[]>([
+    { id: '1', matricule: 'EMP-001', firstName: 'Mamadou', lastName: 'Diallo', hireDate: '2025-01-15', salary: 180000, role: 'Caissier Senior', payments: { '2026-08': true, '2026-09': false } },
+    { id: '2', matricule: 'EMP-002', firstName: 'Aïssatou', lastName: 'Sow', hireDate: '2025-06-01', salary: 150000, role: 'Vendeuse', payments: { '2026-08': true, '2026-09': true } }
   ]);
 
+  // Formulaire Employé
+  const [empFirstName, setEmpFirstName] = useState('');
+  const [empLastName, setEmpLastName] = useState('');
+  const [empHireDate, setEmpHireDate] = useState('');
+  const [empSalary, setEmpSalary] = useState('');
+  const [empRole, setEmpRole] = useState('Caissier');
+
+  // --- HISTORIQUE & CHARGES ---
+  const [sales, setSales] = useState<Invoice[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([
+    { id: 'DEP-101', title: 'Facture Senelec Électricité', amount: 45000, category: 'Électricité', date: '10/09/2026' }
+  ]);
+
+  const [expTitle, setExpTitle] = useState('');
+  const [expAmount, setExpAmount] = useState('');
+  const [expCategory, setExpCategory] = useState('Électricité');
+
+  // --- AUTHENTIFICATION ---
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (email === 'admin' && password === 'admin') {
@@ -107,42 +132,7 @@ export default function App() {
     }
   };
 
-  const handleAddProduct = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newProdName || !newProdPrice || !newProdStock) return;
-    const newProd: Product = {
-      id: String(Date.now()),
-      name: newProdName,
-      category: newProdCategory || 'Général',
-      price: Number(newProdPrice),
-      buyPrice: Number(newProdBuyPrice) || Number(newProdPrice) * 0.7,
-      stock: Number(newProdStock),
-      code: newProdCode || `ART-${Math.floor(100 + Math.random() * 900)}`,
-    };
-    setProducts([newProd, ...products]);
-    setNewProdName('');
-    setNewProdCategory('');
-    setNewProdPrice('');
-    setNewProdBuyPrice('');
-    setNewProdStock('');
-    setNewProdCode('');
-  };
-
-  const handleAddExpense = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!expTitle || !expAmount) return;
-    const newExp: Expense = {
-      id: `DEP-${Math.floor(100 + Math.random() * 900)}`,
-      title: expTitle,
-      amount: Number(expAmount),
-      category: expCategory,
-      date: 'Aujourd\'hui',
-    };
-    setExpenses([newExp, ...expenses]);
-    setExpTitle('');
-    setExpAmount('');
-  };
-
+  // --- GESTION PANIER & STOCK ---
   const addToCart = (product: Product) => {
     if (product.stock <= 0) return;
     const existing = cart.find(item => item.id === product.id);
@@ -166,47 +156,129 @@ export default function App() {
     }).filter(Boolean) as CartItem[]);
   };
 
-  const removeFromCart = (id: string) => {
-    setCart(cart.filter(item => item.id !== id));
-  };
-
+  const removeFromCart = (id: string) => setCart(cart.filter(item => item.id !== id));
   const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-  const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
-  const totalSalesAmount = sales.reduce((sum, sale) => sum + sale.total, 0);
 
+  // --- ENCAISSEMENT ET FACTURATION ---
   const handleCheckout = (method: string) => {
     if (cart.length === 0) return;
 
-    // Mise à jour automatique des stocks
-    setProducts(prevProducts =>
-      prevProducts.map(prod => {
-        const itemInCart = cart.find(item => item.id === prod.id);
-        if (itemInCart) {
-          return { ...prod, stock: Math.max(0, prod.stock - itemInCart.qty) };
-        }
-        return prod;
-      })
-    );
+    // Mise à jour automatique du stock
+    setProducts(prev => prev.map(p => {
+      const item = cart.find(i => i.id === p.id);
+      return item ? { ...p, stock: Math.max(0, p.stock - item.qty) } : p;
+    }));
 
-    const newSale: Sale = {
-      id: `FAC-2026-${Math.floor(100 + Math.random() * 900)}`,
-      client: 'Client Passage',
+    const invoice: Invoice = {
+      id: `FAC-${Math.floor(100000 + Math.random() * 900000)}`,
+      customer: {
+        firstName: customer.firstName || 'Client',
+        lastName: customer.lastName || 'Passage',
+        phone: customer.phone || 'Non renseigné',
+        address: customer.address || 'Non renseignée',
+      },
+      items: [...cart],
       total: cartTotal,
       method,
-      time: 'À l\'instant'
+      date: new Date().toLocaleDateString('fr-FR'),
+      time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
     };
-    setSales([newSale, ...sales]);
-    setPaymentSuccess(true);
-    setTimeout(() => {
-      setCart([]);
-      setPaymentSuccess(false);
-    }, 1800);
+
+    setSales([invoice, ...sales]);
+    setCurrentInvoice(invoice);
+    setCart([]);
+    setCustomer({ firstName: '', lastName: '', phone: '', address: '' });
   };
 
-  const filteredProducts = products.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.code.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesSearch;
-  });
+  // --- ENVOI WHATSAPP ---
+  const sendWhatsApp = (inv: Invoice) => {
+    let cleanPhone = inv.customer.phone.replace(/\s+/g, '').replace('+', '');
+    if (!cleanPhone.startsWith('221') && cleanPhone.length === 9) {
+      cleanPhone = '221' + cleanPhone; // Indicatif Sénégal par défaut si nécessaire
+    }
+
+    let message = `*FACTURE - sama Boutique*\n`;
+    message += `Facture N°: *${inv.id}*\n`;
+    message += `Date: ${inv.date} à ${inv.time}\n`;
+    message += `Client: ${inv.customer.firstName} ${inv.customer.lastName}\n`;
+    message += `----------------------------\n`;
+    inv.items.forEach(item => {
+      message += `• ${item.name} x${item.qty} : ${(item.price * item.qty).toLocaleString()} FCFA\n`;
+    });
+    message += `----------------------------\n`;
+    message += `*TOTAL PAYÉ : ${inv.total.toLocaleString()} FCFA*\n`;
+    message += `Règlement : ${inv.method}\n\n`;
+    message += `Merci de votre confiance !`;
+
+    const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
+  };
+
+  // --- GESTION EMPLOYES (RH) ---
+  const handleAddEmployee = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!empFirstName || !empLastName || !empSalary) return;
+
+    const newEmp: Employee = {
+      id: String(Date.now()),
+      matricule: `EMP-${Math.floor(100 + Math.random() * 900)}`,
+      firstName: empFirstName,
+      lastName: empLastName,
+      hireDate: empHireDate || new Date().toISOString().split('T')[0],
+      salary: Number(empSalary),
+      role: empRole,
+      payments: {}
+    };
+
+    setEmployees([...employees, newEmp]);
+    setEmpFirstName('');
+    setEmpLastName('');
+    setEmpSalary('');
+    setEmpHireDate('');
+  };
+
+  const togglePaymentStatus = (empId: string, monthKey: string) => {
+    setEmployees(employees.map(emp => {
+      if (emp.id === empId) {
+        const updatedPayments = { ...emp.payments, [monthKey]: !emp.payments[monthKey] };
+        return { ...emp, payments: updatedPayments };
+      }
+      return emp;
+    }));
+  };
+
+  // --- GESTION ARTICLES & DEPENSES ---
+  const handleAddProduct = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newProdName || !newProdPrice || !newProdStock) return;
+    setProducts([{
+      id: String(Date.now()),
+      name: newProdName,
+      category: newProdCategory || 'Général',
+      price: Number(newProdPrice),
+      buyPrice: Number(newProdBuyPrice) || Number(newProdPrice) * 0.7,
+      stock: Number(newProdStock),
+      code: newProdCode || `ART-${Math.floor(100 + Math.random() * 900)}`,
+    }, ...products]);
+    setNewProdName(''); setNewProdCategory(''); setNewProdPrice(''); setNewProdBuyPrice(''); setNewProdStock(''); setNewProdCode('');
+  };
+
+  const handleAddExpense = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!expTitle || !expAmount) return;
+    setExpenses([{
+      id: `DEP-${Math.floor(100 + Math.random() * 900)}`,
+      title: expTitle,
+      amount: Number(expAmount),
+      category: expCategory,
+      date: 'Aujourd\'hui'
+    }, ...expenses]);
+    setExpTitle(''); setExpAmount('');
+  };
+
+  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const totalSalesAmount = sales.reduce((sum, s) => sum + s.total, 0);
+  const currentMonthKey = '2026-09';
 
   if (!isAuthenticated) {
     return (
@@ -218,48 +290,24 @@ export default function App() {
               <Store className="w-8 h-8" />
             </div>
             <h1 className="text-2xl font-extrabold text-white tracking-tight">sama Boutique</h1>
-            <p className="text-xs text-orange-400 font-semibold tracking-wider uppercase mt-1">Système ERP Multi-Commerce</p>
+            <p className="text-xs text-orange-400 font-semibold tracking-wider uppercase mt-1">Système ERP & POS Multi-Commerce</p>
           </div>
 
-          {loginError && (
-            <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs p-3.5 rounded-xl mb-5 text-center font-medium">
-              {loginError}
-            </div>
-          )}
+          {loginError && <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs p-3.5 rounded-xl mb-5 text-center">{loginError}</div>}
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Identifiant</label>
-              <input
-                type="text"
-                placeholder="Ex: admin ou caisse"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 bg-[#1F2937]/50 border border-gray-700/60 rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 transition"
-                required
-              />
+              <input type="text" placeholder="admin ou caisse" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-4 py-3 bg-[#1F2937]/50 border border-gray-700/60 rounded-xl text-sm text-white" required />
             </div>
             <div>
               <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Mot de passe</label>
-              <input
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 bg-[#1F2937]/50 border border-gray-700/60 rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 transition"
-                required
-              />
+              <input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-4 py-3 bg-[#1F2937]/50 border border-gray-700/60 rounded-xl text-sm text-white" required />
             </div>
-            <button
-              type="submit"
-              className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold py-3.5 rounded-xl text-sm transition shadow-lg shadow-orange-500/20 active:scale-[0.98] mt-2"
-            >
-              Connexion à la Caisse
-            </button>
+            <button type="submit" className="w-full bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold py-3.5 rounded-xl text-sm transition shadow-lg shadow-orange-500/20">Se Connecter</button>
           </form>
-
           <div className="mt-8 pt-6 border-t border-gray-800 text-center text-xs text-gray-500">
-            Admin: <span className="text-orange-400 font-mono">admin / admin</span> | Caisse: <span className="text-amber-400 font-mono">caisse / 1234</span>
+            Admin: <span className="text-orange-400 font-mono">admin / admin</span> | Caissier: <span className="text-amber-400 font-mono">caisse / 1234</span>
           </div>
         </div>
       </div>
@@ -268,7 +316,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#0B0F19] text-gray-100 flex flex-col md:flex-row">
-      {/* Navigation Latérale */}
+      {/* BARRE LATÉRALE */}
       <aside className="w-full md:w-64 bg-[#111827] border-r border-gray-800/80 p-5 flex flex-col justify-between shrink-0">
         <div>
           <div className="flex items-center gap-3 px-2 py-3 mb-6">
@@ -281,265 +329,263 @@ export default function App() {
             </div>
           </div>
 
-          {/* Choix du type de commerce */}
           <div className="mb-6 p-3 bg-[#1F2937]/50 rounded-2xl border border-gray-800">
-            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Type de Boutique</label>
+            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Secteur d'Activité</label>
             <div className="grid grid-cols-3 gap-1">
-              <button 
-                onClick={() => setBusinessType('TELEPHONY')} 
-                className={`p-2 rounded-xl text-xs flex justify-center items-center transition ${businessType === 'TELEPHONY' ? 'bg-orange-500 text-white font-bold' : 'text-gray-400 hover:bg-gray-800'}`}
-                title="Boutique Téléphonie"
-              >
-                <Smartphone className="w-4 h-4" />
-              </button>
-              <button 
-                onClick={() => setBusinessType('HARDWARE')} 
-                className={`p-2 rounded-xl text-xs flex justify-center items-center transition ${businessType === 'HARDWARE' ? 'bg-orange-500 text-white font-bold' : 'text-gray-400 hover:bg-gray-800'}`}
-                title="Quincaillerie"
-              >
-                <Wrench className="w-4 h-4" />
-              </button>
-              <button 
-                onClick={() => setBusinessType('GENERAL')} 
-                className={`p-2 rounded-xl text-xs flex justify-center items-center transition ${businessType === 'GENERAL' ? 'bg-orange-500 text-white font-bold' : 'text-gray-400 hover:bg-gray-800'}`}
-                title="Commerce Général / Superette"
-              >
-                <ShoppingBag className="w-4 h-4" />
-              </button>
+              <button onClick={() => setBusinessType('TELEPHONY')} className={`p-2 rounded-xl text-xs flex justify-center ${businessType === 'TELEPHONY' ? 'bg-orange-500 text-white' : 'text-gray-400'}`}><Smartphone className="w-4 h-4" /></button>
+              <button onClick={() => setBusinessType('HARDWARE')} className={`p-2 rounded-xl text-xs flex justify-center ${businessType === 'HARDWARE' ? 'bg-orange-500 text-white' : 'text-gray-400'}`}><Wrench className="w-4 h-4" /></button>
+              <button onClick={() => setBusinessType('GENERAL')} className={`p-2 rounded-xl text-xs flex justify-center ${businessType === 'GENERAL' ? 'bg-orange-500 text-white' : 'text-gray-400'}`}><ShoppingBag className="w-4 h-4" /></button>
             </div>
           </div>
 
-          {/* Menus Principaux */}
           <div className="space-y-1">
-            <button 
-              onClick={() => setActiveTab('POS')} 
-              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-bold transition ${activeTab === 'POS' ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' : 'text-gray-400 hover:bg-gray-800/60 hover:text-white'}`}
-            >
-              <div className="flex items-center gap-3">
-                <ShoppingCart className="w-4 h-4" />
-                <span>Caisse POS</span>
-              </div>
+            <button onClick={() => setActiveTab('POS')} className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-bold transition ${activeTab === 'POS' ? 'bg-orange-500 text-white' : 'text-gray-400 hover:bg-gray-800'}`}>
+              <div className="flex items-center gap-3"><ShoppingCart className="w-4 h-4" /><span>Caisse POS</span></div>
               <ChevronRight className="w-3.5 h-3.5 opacity-60" />
             </button>
 
             {userRole === 'ADMIN' && (
-              <button 
-                onClick={() => setActiveTab('DASHBOARD')} 
-                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-bold transition ${activeTab === 'DASHBOARD' ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' : 'text-gray-400 hover:bg-gray-800/60 hover:text-white'}`}
-              >
-                <div className="flex items-center gap-3">
-                  <BarChart3 className="w-4 h-4" />
-                  <span>Bilan & Analytics</span>
-                </div>
+              <button onClick={() => setActiveTab('DASHBOARD')} className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-bold transition ${activeTab === 'DASHBOARD' ? 'bg-orange-500 text-white' : 'text-gray-400 hover:bg-gray-800'}`}>
+                <div className="flex items-center gap-3"><BarChart3 className="w-4 h-4" /><span>Bilan & Analytics</span></div>
                 <ChevronRight className="w-3.5 h-3.5 opacity-60" />
               </button>
             )}
 
-            <button 
-              onClick={() => setActiveTab('INVENTORY')} 
-              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-bold transition ${activeTab === 'INVENTORY' ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' : 'text-gray-400 hover:bg-gray-800/60 hover:text-white'}`}
-            >
-              <div className="flex items-center gap-3">
-                <Package className="w-4 h-4" />
-                <span>Gestion du Stock</span>
-              </div>
+            {/* ONGLET RH EXCLUSIF GERANT PRINCIPAL (ADMIN) */}
+            {userRole === 'ADMIN' && (
+              <button onClick={() => setActiveTab('HR')} className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-bold transition ${activeTab === 'HR' ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' : 'text-gray-400 hover:bg-gray-800'}`}>
+                <div className="flex items-center gap-3"><Users className="w-4 h-4" /><span>Ressources Humaines</span></div>
+                <ChevronRight className="w-3.5 h-3.5 opacity-60" />
+              </button>
+            )}
+
+            <button onClick={() => setActiveTab('INVENTORY')} className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-bold transition ${activeTab === 'INVENTORY' ? 'bg-orange-500 text-white' : 'text-gray-400 hover:bg-gray-800'}`}>
+              <div className="flex items-center gap-3"><Package className="w-4 h-4" /><span>Gestion du Stock</span></div>
               <ChevronRight className="w-3.5 h-3.5 opacity-60" />
             </button>
 
-            <button 
-              onClick={() => setActiveTab('EXPENSES')} 
-              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-bold transition ${activeTab === 'EXPENSES' ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' : 'text-gray-400 hover:bg-gray-800/60 hover:text-white'}`}
-            >
-              <div className="flex items-center gap-3">
-                <DollarSign className="w-4 h-4" />
-                <span>Dépenses & Charges</span>
-              </div>
+            <button onClick={() => setActiveTab('EXPENSES')} className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-bold transition ${activeTab === 'EXPENSES' ? 'bg-orange-500 text-white' : 'text-gray-400 hover:bg-gray-800'}`}>
+              <div className="flex items-center gap-3"><DollarSign className="w-4 h-4" /><span>Dépenses & Charges</span></div>
               <ChevronRight className="w-3.5 h-3.5 opacity-60" />
             </button>
 
-            <button 
-              onClick={() => setActiveTab('SALES')} 
-              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-bold transition ${activeTab === 'SALES' ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' : 'text-gray-400 hover:bg-gray-800/60 hover:text-white'}`}
-            >
-              <div className="flex items-center gap-3">
-                <Receipt className="w-4 h-4" />
-                <span>Historique Ventes</span>
-              </div>
+            <button onClick={() => setActiveTab('SALES')} className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-bold transition ${activeTab === 'SALES' ? 'bg-orange-500 text-white' : 'text-gray-400 hover:bg-gray-800'}`}>
+              <div className="flex items-center gap-3"><Receipt className="w-4 h-4" /><span>Historique Factures</span></div>
               <ChevronRight className="w-3.5 h-3.5 opacity-60" />
             </button>
           </div>
         </div>
 
-        {/* Profil & Déconnexion */}
-        <div className="pt-6 border-t border-gray-800/80">
+        <div className="pt-6 border-t border-gray-800">
           <div className="flex items-center justify-between bg-[#1F2937]/40 p-3 rounded-xl border border-gray-800">
             <div>
               <p className="text-xs font-bold text-white uppercase">{userRole === 'ADMIN' ? 'Gérant Principal' : 'Poste Caissier'}</p>
-              <p className="text-[10px] text-emerald-400 font-medium flex items-center gap-1 mt-0.5">
-                <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span> En ligne
-              </p>
+              <p className="text-[10px] text-emerald-400 font-medium">Connecté</p>
             </div>
-            <button 
-              onClick={() => setIsAuthenticated(false)} 
-              className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition"
-              title="Déconnexion"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
+            <button onClick={() => setIsAuthenticated(false)} className="p-2 text-gray-400 hover:text-red-400"><LogOut className="w-4 h-4" /></button>
           </div>
         </div>
       </aside>
 
-      {/* Main Content */}
+      {/* CONTENU PRINCIPAL */}
       <main className="flex-1 p-6 overflow-y-auto">
-        {/* VUE 1: CAISSE POS */}
+        {/* VUE 1: CAISSE POS + CLIENT + PAIEMENT */}
         {activeTab === 'POS' && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             <div className="lg:col-span-7 xl:col-span-8 space-y-5">
-              <div className="flex flex-col sm:flex-row gap-3">
-                <div className="relative flex-1">
-                  <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
-                  <input
-                    type="text"
-                    placeholder="Rechercher par nom ou code..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-[#111827] border border-gray-800 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 transition"
-                  />
-                </div>
+              <div className="relative">
+                <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
+                <input type="text" placeholder="Rechercher produit..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-3 bg-[#111827] border border-gray-800 rounded-xl text-xs text-white" />
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3.5">
-                {filteredProducts.map(p => (
-                  <div
-                    key={p.id}
-                    onClick={() => addToCart(p)}
-                    className={`bg-[#111827] border p-4 rounded-2xl transition duration-150 flex flex-col justify-between group ${p.stock > 0 ? 'border-gray-800/80 hover:border-orange-500/80 cursor-pointer hover:-translate-y-0.5' : 'border-red-900/30 opacity-50 cursor-not-allowed'}`}
-                  >
+                {products.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase())).map(p => (
+                  <div key={p.id} onClick={() => addToCart(p)} className={`bg-[#111827] border p-4 rounded-2xl flex flex-col justify-between cursor-pointer hover:border-orange-500 ${p.stock <= 0 ? 'opacity-50' : ''}`}>
                     <div>
-                      <span className="text-[9px] font-extrabold text-gray-500 uppercase tracking-wider">{p.category}</span>
-                      <h3 className="font-bold text-white text-xs mt-1.5 group-hover:text-orange-400 transition leading-snug">{p.name}</h3>
+                      <span className="text-[9px] font-extrabold text-gray-500 uppercase">{p.category}</span>
+                      <h3 className="font-bold text-white text-xs mt-1">{p.name}</h3>
                     </div>
-                    <div className="mt-4 flex justify-between items-end pt-2 border-t border-gray-800/40">
+                    <div className="mt-4 flex justify-between items-end border-t border-gray-800/40 pt-2">
                       <div>
-                        <span className={`text-[10px] block font-medium ${p.stock === 0 ? 'text-red-400 font-bold' : 'text-gray-500'}`}>
-                          {p.stock === 0 ? 'Rupture' : `Stock: ${p.stock}`}
-                        </span>
+                        <span className="text-[10px] text-gray-500 block">Stock: {p.stock}</span>
                         <span className="text-sm font-extrabold text-orange-400">{p.price.toLocaleString()} F</span>
                       </div>
-                      <div className="p-2 bg-gray-800 group-hover:bg-orange-500 text-white rounded-xl transition">
-                        <Plus className="w-3.5 h-3.5" />
-                      </div>
+                      <div className="p-2 bg-gray-800 rounded-xl text-white"><Plus className="w-3.5 h-3.5" /></div>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="lg:col-span-5 xl:col-span-4 bg-[#111827] border border-gray-800/80 rounded-3xl p-5 flex flex-col justify-between min-h-[580px] shadow-2xl relative">
-              {paymentSuccess && (
-                <div className="absolute inset-0 bg-[#111827]/95 backdrop-blur-md rounded-3xl z-20 flex flex-col items-center justify-center p-6 text-center">
-                  <CheckCircle2 className="w-16 h-16 text-emerald-400 mb-3 animate-bounce" />
-                  <h3 className="text-xl font-extrabold text-white">Vente Validée !</h3>
-                  <p className="text-xs text-gray-400 mt-1">Ticket enregistré et stock mis à jour</p>
-                </div>
-              )}
-
+            {/* PANIER & INFORMATIONS CLIENT */}
+            <div className="lg:col-span-5 xl:col-span-4 bg-[#111827] border border-gray-800 rounded-3xl p-5 flex flex-col justify-between min-h-[580px]">
               <div>
-                <div className="flex justify-between items-center pb-4 border-b border-gray-800">
-                  <h2 className="font-extrabold text-white text-sm flex items-center gap-2">
-                    <Receipt className="w-4 h-4 text-orange-400" /> Ticket Caisse
-                  </h2>
-                  <span className="text-[10px] text-gray-400 font-bold bg-[#1F2937] px-2.5 py-1 rounded-lg">
-                    {cart.reduce((sum, item) => sum + item.qty, 0)} Articles
-                  </span>
+                <h2 className="font-extrabold text-white text-sm flex items-center gap-2 pb-3 border-b border-gray-800">
+                  <Receipt className="w-4 h-4 text-orange-400" /> Informations Vente & Client
+                </h2>
+
+                {/* Saisie Client */}
+                <div className="mt-4 space-y-2 bg-[#1F2937]/40 p-3 rounded-2xl border border-gray-800">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Coordonnées Client</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input type="text" placeholder="Prénom" value={customer.firstName} onChange={e => setCustomer({...customer, firstName: e.target.value})} className="px-3 py-2 bg-[#0B0F19] border border-gray-700/60 rounded-xl text-xs text-white" />
+                    <input type="text" placeholder="Nom" value={customer.lastName} onChange={e => setCustomer({...customer, lastName: e.target.value})} className="px-3 py-2 bg-[#0B0F19] border border-gray-700/60 rounded-xl text-xs text-white" />
+                  </div>
+                  <input type="text" placeholder="Numéro Téléphone (WhatsApp)" value={customer.phone} onChange={e => setCustomer({...customer, phone: e.target.value})} className="w-full px-3 py-2 bg-[#0B0F19] border border-gray-700/60 rounded-xl text-xs text-white" />
+                  <input type="text" placeholder="Adresse physique" value={customer.address} onChange={e => setCustomer({...customer, address: e.target.value})} className="w-full px-3 py-2 bg-[#0B0F19] border border-gray-700/60 rounded-xl text-xs text-white" />
                 </div>
 
-                <div className="divide-y divide-gray-800 max-h-[320px] overflow-y-auto my-3 pr-1">
+                {/* Contenu du Panier */}
+                <div className="divide-y divide-gray-800 max-h-[220px] overflow-y-auto my-3 pr-1">
                   {cart.length === 0 ? (
-                    <div className="py-20 text-center text-gray-500 text-xs">Panier vide. Cliquez sur un article pour l'ajouter.</div>
+                    <p className="py-10 text-center text-gray-500 text-xs">Panier vide</p>
                   ) : (
                     cart.map(item => (
-                      <div key={item.id} className="py-3 flex items-center justify-between gap-2">
-                        <div className="flex-1">
+                      <div key={item.id} className="py-2.5 flex items-center justify-between">
+                        <div>
                           <p className="font-bold text-white text-xs">{item.name}</p>
                           <p className="text-[11px] text-orange-400 font-semibold">{item.price.toLocaleString()} FCFA</p>
                         </div>
                         <div className="flex items-center gap-2 bg-[#0B0F19] p-1 rounded-xl border border-gray-800">
-                          <button onClick={() => updateQty(item.id, -1)} className="p-1 hover:bg-gray-800 rounded-lg text-gray-400"><Minus className="w-3 h-3" /></button>
-                          <span className="text-xs font-bold px-1.5">{item.qty}</span>
-                          <button onClick={() => updateQty(item.id, 1)} className="p-1 hover:bg-gray-800 rounded-lg text-gray-400"><Plus className="w-3 h-3" /></button>
+                          <button onClick={() => updateQty(item.id, -1)} className="p-1 text-gray-400"><Minus className="w-3 h-3" /></button>
+                          <span className="text-xs font-bold px-1">{item.qty}</span>
+                          <button onClick={() => updateQty(item.id, 1)} className="p-1 text-gray-400"><Plus className="w-3 h-3" /></button>
                         </div>
-                        <button onClick={() => removeFromCart(item.id)} className="text-gray-500 hover:text-red-400 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => removeFromCart(item.id)} className="text-gray-500 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
                       </div>
                     ))
                   )}
                 </div>
               </div>
 
+              {/* Encaissement */}
               <div className="border-t border-gray-800 pt-4 space-y-3">
                 <div className="flex justify-between items-baseline">
                   <span className="text-xs text-gray-400 font-bold uppercase">Total À Encaisser</span>
-                  <span className="text-2xl font-extrabold text-orange-400 tracking-tight">{cartTotal.toLocaleString()} FCFA</span>
+                  <span className="text-2xl font-extrabold text-orange-400">{cartTotal.toLocaleString()} FCFA</span>
                 </div>
-
-                <div className="grid grid-cols-3 gap-2 pt-1">
-                  <button onClick={() => handleCheckout('Espèces')} disabled={cart.length === 0} className="bg-emerald-600/20 hover:bg-emerald-600 border border-emerald-500/30 text-emerald-300 hover:text-white font-bold py-3 rounded-xl text-xs transition disabled:opacity-30">Espèces</button>
-                  <button onClick={() => handleCheckout('Wave')} disabled={cart.length === 0} className="bg-sky-600/20 hover:bg-sky-600 border border-sky-500/30 text-sky-300 hover:text-white font-bold py-3 rounded-xl text-xs transition disabled:opacity-30">Wave</button>
-                  <button onClick={() => handleCheckout('Orange Money')} disabled={cart.length === 0} className="bg-orange-600/20 hover:bg-orange-600 border border-orange-500/30 text-orange-300 hover:text-white font-bold py-3 rounded-xl text-xs transition disabled:opacity-30">OM</button>
+                <div className="grid grid-cols-3 gap-2">
+                  <button onClick={() => handleCheckout('Espèces')} disabled={cart.length === 0} className="bg-emerald-600/20 border border-emerald-500 text-emerald-300 font-bold py-3 rounded-xl text-xs disabled:opacity-30">Espèces</button>
+                  <button onClick={() => handleCheckout('Wave')} disabled={cart.length === 0} className="bg-sky-600/20 border border-sky-500 text-sky-300 font-bold py-3 rounded-xl text-xs disabled:opacity-30">Wave</button>
+                  <button onClick={() => handleCheckout('Orange Money')} disabled={cart.length === 0} className="bg-orange-600/20 border border-orange-500 text-orange-300 font-bold py-3 rounded-xl text-xs disabled:opacity-30">OM</button>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* VUE 2: AJOUT DE PRODUITS & STOCK */}
-        {activeTab === 'INVENTORY' && (
+        {/* MODAL / VISUALISATION FACTURE IMPRIMABLE */}
+        {currentInvoice && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white text-gray-900 rounded-3xl p-6 w-full max-w-lg shadow-2xl space-y-4">
+              <div className="flex justify-between items-start border-b pb-4">
+                <div>
+                  <h2 className="text-xl font-extrabold text-gray-900">sama Boutique</h2>
+                  <p className="text-xs text-gray-500">Facture N°: {currentInvoice.id}</p>
+                </div>
+                <div className="text-right text-xs text-gray-500">
+                  <p>{currentInvoice.date}</p>
+                  <p>{currentInvoice.time}</p>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 p-3 rounded-xl text-xs space-y-1">
+                <p className="font-bold text-gray-700">Client:</p>
+                <p><span className="font-semibold">Nom & Prénom:</span> {currentInvoice.customer.firstName} {currentInvoice.customer.lastName}</p>
+                <p><span className="font-semibold">Téléphone:</span> {currentInvoice.customer.phone}</p>
+                <p><span className="font-semibold">Adresse:</span> {currentInvoice.customer.address}</p>
+              </div>
+
+              <table className="w-full text-xs border-collapse">
+                <thead>
+                  <tr className="border-b text-gray-500 text-left">
+                    <th className="py-2">Désignation</th>
+                    <th className="py-2 text-center">Qté</th>
+                    <th className="py-2 text-right">Total</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {currentInvoice.items.map(item => (
+                    <tr key={item.id}>
+                      <td className="py-2 font-medium">{item.name}</td>
+                      <td className="py-2 text-center">{item.qty}</td>
+                      <td className="py-2 text-right font-bold">{(item.price * item.qty).toLocaleString()} F</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <div className="border-t pt-3 flex justify-between items-center font-extrabold text-base">
+                <span>Total Payé ({currentInvoice.method}):</span>
+                <span className="text-orange-600">{currentInvoice.total.toLocaleString()} FCFA</span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 pt-2">
+                <button onClick={() => window.print()} className="flex items-center justify-center gap-1.5 bg-gray-900 text-white font-bold py-2.5 rounded-xl text-xs">
+                  <Printer className="w-4 h-4" /> Imprimer
+                </button>
+                <button onClick={() => sendWhatsApp(currentInvoice)} className="flex items-center justify-center gap-1.5 bg-emerald-600 text-white font-bold py-2.5 rounded-xl text-xs">
+                  <Share2 className="w-4 h-4" /> WhatsApp
+                </button>
+                <button onClick={() => setCurrentInvoice(null)} className="bg-gray-200 text-gray-700 font-bold py-2.5 rounded-xl text-xs">
+                  Fermer
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* VUE 2: RESSOURCES HUMAINES (RH) - GERANT SEULEMENT */}
+        {activeTab === 'HR' && userRole === 'ADMIN' && (
           <div className="space-y-6">
-            <div className="bg-[#111827] border border-gray-800/80 rounded-3xl p-6 shadow-xl">
+            <div className="bg-[#111827] border border-gray-800 rounded-3xl p-6">
               <h2 className="text-lg font-extrabold text-white mb-4 flex items-center gap-2">
-                <PlusCircle className="w-5 h-5 text-orange-400" /> Ajouter un Nouveau Produit au Stock
+                <UserPlus className="w-5 h-5 text-orange-400" /> Ajouter un Nouvel Employé
               </h2>
-              <form onSubmit={handleAddProduct} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <input type="text" placeholder="Désignation / Nom du produit" value={newProdName} onChange={e => setNewProdName(e.target.value)} className="px-4 py-2.5 bg-[#1F2937]/50 border border-gray-700/60 rounded-xl text-xs text-white" required />
-                <input type="text" placeholder="Catégorie (ex: Smartphones, Outils)" value={newProdCategory} onChange={e => setNewProdCategory(e.target.value)} className="px-4 py-2.5 bg-[#1F2937]/50 border border-gray-700/60 rounded-xl text-xs text-white" />
-                <input type="number" placeholder="Prix de Vente (FCFA)" value={newProdPrice} onChange={e => setNewProdPrice(e.target.value)} className="px-4 py-2.5 bg-[#1F2937]/50 border border-gray-700/60 rounded-xl text-xs text-white" required />
-                <input type="number" placeholder="Prix d'Achat Fournisseur (FCFA)" value={newProdBuyPrice} onChange={e => setNewProdBuyPrice(e.target.value)} className="px-4 py-2.5 bg-[#1F2937]/50 border border-gray-700/60 rounded-xl text-xs text-white" />
-                <input type="number" placeholder="Quantité initiale en stock" value={newProdStock} onChange={e => setNewProdStock(e.target.value)} className="px-4 py-2.5 bg-[#1F2937]/50 border border-gray-700/60 rounded-xl text-xs text-white" required />
-                <input type="text" placeholder="Code Référence / Code-Barres" value={newProdCode} onChange={e => setNewProdCode(e.target.value)} className="px-4 py-2.5 bg-[#1F2937]/50 border border-gray-700/60 rounded-xl text-xs text-white" />
-                <button type="submit" className="sm:col-span-2 lg:col-span-3 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl text-xs transition shadow-md shadow-orange-500/20">Enregistrer l'Article dans la Base</button>
+              <form onSubmit={handleAddEmployee} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <input type="text" placeholder="Prénom" value={empFirstName} onChange={e => setEmpFirstName(e.target.value)} className="px-4 py-2.5 bg-[#1F2937]/50 border border-gray-700 rounded-xl text-xs text-white" required />
+                <input type="text" placeholder="Nom" value={empLastName} onChange={e => setEmpLastName(e.target.value)} className="px-4 py-2.5 bg-[#1F2937]/50 border border-gray-700 rounded-xl text-xs text-white" required />
+                <input type="date" value={empHireDate} onChange={e => setEmpHireDate(e.target.value)} className="px-4 py-2.5 bg-[#1F2937]/50 border border-gray-700 rounded-xl text-xs text-white" required />
+                <input type="number" placeholder="Salaire Mensuel (FCFA)" value={empSalary} onChange={e => setEmpSalary(e.target.value)} className="px-4 py-2.5 bg-[#1F2937]/50 border border-gray-700 rounded-xl text-xs text-white" required />
+                <button type="submit" className="bg-orange-500 text-white font-bold py-2.5 rounded-xl text-xs">Enregistrer</button>
               </form>
             </div>
 
-            <div className="bg-[#111827] border border-gray-800/80 rounded-3xl p-6 shadow-xl">
-              <h2 className="text-lg font-extrabold text-white mb-4">Base des Articles ({products.length})</h2>
+            <div className="bg-[#111827] border border-gray-800 rounded-3xl p-6">
+              <h2 className="text-lg font-extrabold text-white mb-4 flex items-center gap-2">
+                <Users className="w-5 h-5 text-orange-400" /> Gestion des Employés & Paie Mensuelle
+              </h2>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead>
                     <tr className="border-b border-gray-800 text-gray-400 uppercase">
-                      <th className="pb-3 font-bold">Code</th>
-                      <th className="pb-3 font-bold">Désignation</th>
-                      <th className="pb-3 font-bold">Catégorie</th>
-                      <th className="pb-3 font-bold">Prix d'Achat</th>
-                      <th className="pb-3 font-bold">Prix Vente</th>
-                      <th className="pb-3 font-bold">Stock</th>
+                      <th className="pb-3">Matricule</th>
+                      <th className="pb-3">Employé</th>
+                      <th className="pb-3">Date d'embauche</th>
+                      <th className="pb-3">Salaire Fixe</th>
+                      <th className="pb-3 text-center">Statut Paie (Septembre 2026)</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-800/60">
-                    {products.map(p => (
-                      <tr key={p.id}>
-                        <td className="py-3 font-mono text-gray-500">{p.code}</td>
-                        <td className="py-3 font-bold text-white">{p.name}</td>
-                        <td className="py-3 text-gray-400">{p.category}</td>
-                        <td className="py-3 font-bold text-gray-400">{p.buyPrice?.toLocaleString()} FCFA</td>
-                        <td className="py-3 font-bold text-orange-400">{p.price.toLocaleString()} FCFA</td>
-                        <td className="py-3 font-bold text-white">
-                          <span className={`px-2 py-1 rounded-md text-[11px] ${p.stock <= 5 ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-emerald-500/10 text-emerald-400'}`}>
-                            {p.stock} unités
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
+                  <tbody className="divide-y divide-gray-800">
+                    {employees.map(emp => {
+                      const isPaid = emp.payments[currentMonthKey];
+                      return (
+                        <tr key={emp.id}>
+                          <td className="py-3 font-mono text-orange-400 font-bold">{emp.matricule}</td>
+                          <td className="py-3 font-bold text-white">{emp.firstName} {emp.lastName}</td>
+                          <td className="py-3 text-gray-400">{emp.hireDate}</td>
+                          <td className="py-3 font-bold text-white">{emp.salary.toLocaleString()} FCFA</td>
+                          <td className="py-3 text-center">
+                            <button
+                              onClick={() => togglePaymentStatus(emp.id, currentMonthKey)}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${isPaid ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'}`}
+                            >
+                              {isPaid ? 'Payé (Marquer non-payé)' : 'Non Payé (Valider Règlement)'}
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -547,82 +593,74 @@ export default function App() {
           </div>
         )}
 
-        {/* VUE 3: DÉPENSES & CHARGES */}
-        {activeTab === 'EXPENSES' && (
+        {/* VUE 3: STOCK */}
+        {activeTab === 'INVENTORY' && (
           <div className="space-y-6">
-            <div className="bg-[#111827] border border-gray-800/80 rounded-3xl p-6 shadow-xl">
-              <h2 className="text-lg font-extrabold text-white mb-4 flex items-center gap-2">
-                <DollarSign className="w-5 h-5 text-orange-400" /> Enregistrer une Dépense
-              </h2>
-              <form onSubmit={handleAddExpense} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <input type="text" placeholder="Motif (ex: Facture Senelec, Repas caissiers)" value={expTitle} onChange={e => setExpTitle(e.target.value)} className="px-4 py-2.5 bg-[#1F2937]/50 border border-gray-700/60 rounded-xl text-xs text-white" required />
-                <input type="number" placeholder="Montant Dépensé (FCFA)" value={expAmount} onChange={e => setExpAmount(e.target.value)} className="px-4 py-2.5 bg-[#1F2937]/50 border border-gray-700/60 rounded-xl text-xs text-white" required />
-                <select value={expCategory} onChange={e => setExpCategory(e.target.value)} className="px-4 py-2.5 bg-[#1F2937]/50 border border-gray-700/60 rounded-xl text-xs text-white">
-                  <option value="Électricité">Électricité</option>
-                  <option value="Repas">Repas & Restauration</option>
-                  <option value="Réfection">Réfection / Entretien</option>
-                  <option value="Loyer">Loyer Boutique</option>
-                  <option value="Transport">Transport / Logistique</option>
-                </select>
-                <button type="submit" className="sm:col-span-3 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl text-xs transition">Ajouter la Charge au Bilan</button>
+            <div className="bg-[#111827] border border-gray-800 rounded-3xl p-6">
+              <h2 className="text-lg font-extrabold text-white mb-4">Ajouter un Produit</h2>
+              <form onSubmit={handleAddProduct} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <input type="text" placeholder="Nom produit" value={newProdName} onChange={e => setNewProdName(e.target.value)} className="px-4 py-2.5 bg-[#1F2937]/50 border border-gray-700 rounded-xl text-xs text-white" required />
+                <input type="number" placeholder="Prix Vente (FCFA)" value={newProdPrice} onChange={e => setNewProdPrice(e.target.value)} className="px-4 py-2.5 bg-[#1F2937]/50 border border-gray-700 rounded-xl text-xs text-white" required />
+                <input type="number" placeholder="Quantité Stock" value={newProdStock} onChange={e => setNewProdStock(e.target.value)} className="px-4 py-2.5 bg-[#1F2937]/50 border border-gray-700 rounded-xl text-xs text-white" required />
+                <button type="submit" className="sm:col-span-3 bg-orange-500 text-white font-bold py-3 rounded-xl text-xs">Ajouter au Stock</button>
               </form>
             </div>
-
-            <div className="bg-[#111827] border border-gray-800/80 rounded-3xl p-6 shadow-xl">
-              <h2 className="text-lg font-extrabold text-white mb-4">Historique des Charges Enregistrées</h2>
-              <div className="divide-y divide-gray-800">
-                {expenses.map(exp => (
-                  <div key={exp.id} className="py-3.5 flex justify-between items-center text-xs">
-                    <div>
-                      <p className="font-bold text-white">{exp.title}</p>
-                      <span className="text-[10px] text-gray-400 bg-gray-800 px-2 py-0.5 rounded">{exp.category} — {exp.date}</span>
-                    </div>
-                    <span className="font-extrabold text-red-400 text-sm">-{exp.amount.toLocaleString()} FCFA</span>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
         )}
 
-        {/* VUE 4: BILAN & ANALYTICS */}
-        {activeTab === 'DASHBOARD' && userRole === 'ADMIN' && (
+        {/* VUE 4: DÉPENSES */}
+        {activeTab === 'EXPENSES' && (
           <div className="space-y-6">
-            <h2 className="text-xl font-extrabold text-white">Bilan Financier Global</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="bg-[#111827] border border-gray-800/80 p-5 rounded-2xl">
-                <span className="text-xs text-gray-400 font-bold uppercase">Total Ventes</span>
-                <p className="text-2xl font-extrabold text-white mt-2">{totalSalesAmount.toLocaleString()} FCFA</p>
-              </div>
-              <div className="bg-[#111827] border border-gray-800/80 p-5 rounded-2xl">
-                <span className="text-xs text-gray-400 font-bold uppercase">Total Charges Dépensées</span>
-                <p className="text-2xl font-extrabold text-red-400 mt-2">{totalExpenses.toLocaleString()} FCFA</p>
-              </div>
-              <div className="bg-gradient-to-br from-orange-500 to-amber-600 p-5 rounded-2xl text-white shadow-xl">
-                <span className="text-xs font-bold uppercase text-orange-100">Solde Net en Caisse</span>
-                <p className="text-2xl font-extrabold mt-2">{(totalSalesAmount - totalExpenses).toLocaleString()} FCFA</p>
-              </div>
+            <div className="bg-[#111827] border border-gray-800 rounded-3xl p-6">
+              <h2 className="text-lg font-extrabold text-white mb-4">Enregistrer une Charge</h2>
+              <form onSubmit={handleAddExpense} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <input type="text" placeholder="Motif" value={expTitle} onChange={e => setExpTitle(e.target.value)} className="px-4 py-2.5 bg-[#1F2937]/50 border border-gray-700 rounded-xl text-xs text-white" required />
+                <input type="number" placeholder="Montant" value={expAmount} onChange={e => setExpAmount(e.target.value)} className="px-4 py-2.5 bg-[#1F2937]/50 border border-gray-700 rounded-xl text-xs text-white" required />
+                <button type="submit" className="bg-red-500 text-white font-bold py-2.5 rounded-xl text-xs">Ajouter Dépense</button>
+              </form>
             </div>
           </div>
         )}
 
-        {/* VUE 5: HISTORIQUE DES VENTES */}
+        {/* VUE 5: HISTORIQUE DES FACTURES */}
         {activeTab === 'SALES' && (
-          <div className="bg-[#111827] border border-gray-800/80 rounded-3xl p-6 shadow-xl">
-            <h2 className="text-lg font-extrabold text-white mb-4">Historique des Ventes</h2>
+          <div className="bg-[#111827] border border-gray-800 rounded-3xl p-6">
+            <h2 className="text-lg font-extrabold text-white mb-4">Historique des Factures Générées</h2>
             <div className="divide-y divide-gray-800">
-              {sales.map(s => (
-                <div key={s.id} className="py-3.5 flex justify-between items-center text-xs">
+              {sales.map(inv => (
+                <div key={inv.id} className="py-3 flex justify-between items-center text-xs">
                   <div>
-                    <p className="font-bold text-white">{s.id}</p>
-                    <p className="text-[10px] text-gray-500">{s.time} — {s.client}</p>
+                    <p className="font-bold text-white">{inv.id} — {inv.customer.firstName} {inv.customer.lastName}</p>
+                    <p className="text-[10px] text-gray-500">{inv.date} à {inv.time} | Tél: {inv.customer.phone}</p>
                   </div>
-                  <div className="text-right">
-                    <p className="font-extrabold text-orange-400">{s.total.toLocaleString()} FCFA</p>
-                    <span className="text-[10px] text-gray-400 font-medium">{s.method}</span>
+                  <div className="flex items-center gap-3">
+                    <p className="font-extrabold text-orange-400">{inv.total.toLocaleString()} FCFA</p>
+                    <button onClick={() => setCurrentInvoice(inv)} className="p-2 bg-gray-800 rounded-xl text-white"><Printer className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => sendWhatsApp(inv)} className="p-2 bg-emerald-600 rounded-xl text-white"><Share2 className="w-3.5 h-3.5" /></button>
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* VUE 6: DASHBOARD ADMIN */}
+        {activeTab === 'DASHBOARD' && userRole === 'ADMIN' && (
+          <div className="space-y-6">
+            <h2 className="text-xl font-extrabold text-white">Bilan Général & Paies</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="bg-[#111827] border border-gray-800 p-5 rounded-2xl">
+                <span className="text-xs text-gray-400 font-bold uppercase">Total Ventes</span>
+                <p className="text-2xl font-extrabold text-white mt-2">{totalSalesAmount.toLocaleString()} FCFA</p>
+              </div>
+              <div className="bg-[#111827] border border-gray-800 p-5 rounded-2xl">
+                <span className="text-xs text-gray-400 font-bold uppercase">Total Dépenses</span>
+                <p className="text-2xl font-extrabold text-red-400 mt-2">{totalExpenses.toLocaleString()} FCFA</p>
+              </div>
+              <div className="bg-gradient-to-br from-orange-500 to-amber-600 p-5 rounded-2xl text-white">
+                <span className="text-xs font-bold uppercase">Solde Caisse</span>
+                <p className="text-2xl font-extrabold mt-2">{(totalSalesAmount - totalExpenses).toLocaleString()} FCFA</p>
+              </div>
             </div>
           </div>
         )}
