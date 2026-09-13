@@ -1,24 +1,57 @@
 import React, { useState } from 'react';
 import { 
-  Store, ShoppingCart, LayoutDashboard, Package, LogOut, 
+  Store, ShoppingCart, Package, LogOut, 
   Search, Plus, Minus, Trash2, CheckCircle2, 
   Receipt, ChevronRight, BarChart3, PlusCircle, Wrench, Smartphone, ShoppingBag, DollarSign
 } from 'lucide-react';
 
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  buyPrice: number;
+  stock: number;
+  category: string;
+  code: string;
+}
+
+interface CartItem {
+  id: string;
+  name: string;
+  price: number;
+  qty: number;
+}
+
+interface Expense {
+  id: string;
+  title: string;
+  amount: number;
+  category: string;
+  date: string;
+}
+
+interface Sale {
+  id: string;
+  client: string;
+  total: number;
+  method: string;
+  time: string;
+}
+
 export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [userRole, setUserRole] = useState<'ADMIN' | 'CASHIER'>('ADMIN');
   const [activeTab, setActiveTab] = useState<'POS' | 'DASHBOARD' | 'INVENTORY' | 'EXPENSES' | 'SALES'>('POS');
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loginError, setLoginError] = useState('');
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [loginError, setLoginError] = useState<string>('');
 
   // Secteur d'activité de la boutique
   const [businessType, setBusinessType] = useState<'TELEPHONY' | 'HARDWARE' | 'GENERAL'>('TELEPHONY');
 
   // Produits
-  const [products, setProducts] = useState([
+  const [products, setProducts] = useState<Product[]>([
     { id: '1', name: 'iPhone 13 Pro 128GB', price: 420000, buyPrice: 350000, stock: 5, category: 'Téléphones', code: 'TEL-001' },
     { id: '2', name: 'Chargeur Rapide 20W USB-C', price: 12000, buyPrice: 6000, stock: 25, category: 'Accessoires', code: 'ACC-002' },
     { id: '3', name: 'Écouteurs AirPods Pro v2', price: 85000, buyPrice: 65000, stock: 8, category: 'Accessoires', code: 'ACC-003' },
@@ -27,33 +60,32 @@ export default function App() {
   ]);
 
   // Formulaire Nouveau Produit
-  const [newProdName, setNewProdName] = useState('');
-  const [newProdCategory, setNewProdCategory] = useState('');
-  const [newProdPrice, setNewProdPrice] = useState('');
-  const [newProdBuyPrice, setNewProdBuyPrice] = useState('');
-  const [newProdStock, setNewProdStock] = useState('');
-  const [newProdCode, setNewProdCode] = useState('');
+  const [newProdName, setNewProdName] = useState<string>('');
+  const [newProdCategory, setNewProdCategory] = useState<string>('');
+  const [newProdPrice, setNewProdPrice] = useState<string>('');
+  const [newProdBuyPrice, setNewProdBuyPrice] = useState<string>('');
+  const [newProdStock, setNewProdStock] = useState<string>('');
+  const [newProdCode, setNewProdCode] = useState<string>('');
 
   // Dépenses de la boutique
-  const [expenses, setExpenses] = useState([
+  const [expenses, setExpenses] = useState<Expense[]>([
     { id: 'DEP-101', title: 'Facture Senelec Électricité', amount: 45000, category: 'Électricité', date: '10/09/2026' },
     { id: 'DEP-102', title: 'Restauration équipe caisse', amount: 12000, category: 'Repas', date: '11/09/2026' },
     { id: 'DEP-103', title: 'Achat serrure & peinture comptoir', amount: 18000, category: 'Réfection', date: '08/09/2026' },
   ]);
 
   // Formulaire Nouvelle Dépense
-  const [expTitle, setExpTitle] = useState('');
-  const [expAmount, setExpAmount] = useState('');
-  const [expCategory, setExpCategory] = useState('Électricité');
+  const [expTitle, setExpTitle] = useState<string>('');
+  const [expAmount, setExpAmount] = useState<string>('');
+  const [expCategory, setExpCategory] = useState<string>('Électricité');
 
   // Recherche & Panier
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('TOUS');
-  const [cart, setCart] = useState<Array<{ id: string; name: string; price: number; qty: number }>>([]);
-  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [paymentSuccess, setPaymentSuccess] = useState<boolean>(false);
 
   // Historique Ventes
-  const [sales, setSales] = useState([
+  const [sales, setSales] = useState<Sale[]>([
     { id: 'FAC-2026-091', client: 'Client Passage', total: 420000, method: 'Wave', time: '14:20' },
     { id: 'FAC-2026-090', client: 'Client Passage', total: 24000, method: 'Espèces', time: '13:45' },
   ]);
@@ -78,7 +110,7 @@ export default function App() {
   const handleAddProduct = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newProdName || !newProdPrice || !newProdStock) return;
-    const newProd = {
+    const newProd: Product = {
       id: String(Date.now()),
       name: newProdName,
       category: newProdCategory || 'Général',
@@ -99,7 +131,7 @@ export default function App() {
   const handleAddExpense = (e: React.FormEvent) => {
     e.preventDefault();
     if (!expTitle || !expAmount) return;
-    const newExp = {
+    const newExp: Expense = {
       id: `DEP-${Math.floor(100 + Math.random() * 900)}`,
       title: expTitle,
       amount: Number(expAmount),
@@ -111,9 +143,11 @@ export default function App() {
     setExpAmount('');
   };
 
-  const addToCart = (product: typeof products[0]) => {
+  const addToCart = (product: Product) => {
+    if (product.stock <= 0) return;
     const existing = cart.find(item => item.id === product.id);
     if (existing) {
+      if (existing.qty >= product.stock) return;
       setCart(cart.map(item => item.id === product.id ? { ...item, qty: item.qty + 1 } : item));
     } else {
       setCart([...cart, { id: product.id, name: product.name, price: product.price, qty: 1 }]);
@@ -121,13 +155,15 @@ export default function App() {
   };
 
   const updateQty = (id: string, delta: number) => {
+    const product = products.find(p => p.id === id);
     setCart(cart.map(item => {
       if (item.id === id) {
         const newQty = item.qty + delta;
+        if (product && newQty > product.stock) return item;
         return newQty > 0 ? { ...item, qty: newQty } : null;
       }
       return item;
-    }).filter(Boolean) as any);
+    }).filter(Boolean) as CartItem[]);
   };
 
   const removeFromCart = (id: string) => {
@@ -140,7 +176,19 @@ export default function App() {
 
   const handleCheckout = (method: string) => {
     if (cart.length === 0) return;
-    const newSale = {
+
+    // Mise à jour automatique des stocks
+    setProducts(prevProducts =>
+      prevProducts.map(prod => {
+        const itemInCart = cart.find(item => item.id === prod.id);
+        if (itemInCart) {
+          return { ...prod, stock: Math.max(0, prod.stock - itemInCart.qty) };
+        }
+        return prod;
+      })
+    );
+
+    const newSale: Sale = {
       id: `FAC-2026-${Math.floor(100 + Math.random() * 900)}`,
       client: 'Client Passage',
       total: cartTotal,
@@ -157,8 +205,7 @@ export default function App() {
 
   const filteredProducts = products.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.code.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'TOUS' || p.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+    return matchesSearch;
   });
 
   if (!isAuthenticated) {
@@ -171,7 +218,7 @@ export default function App() {
               <Store className="w-8 h-8" />
             </div>
             <h1 className="text-2xl font-extrabold text-white tracking-tight">sama Boutique</h1>
-            <p className="text-xs text-orange-400 font-semibold tracking-wider uppercase mt-1">Sytème ERP Multi-Commerce</p>
+            <p className="text-xs text-orange-400 font-semibold tracking-wider uppercase mt-1">Système ERP Multi-Commerce</p>
           </div>
 
           {loginError && (
@@ -354,7 +401,7 @@ export default function App() {
                   <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
                   <input
                     type="text"
-                    placeholder="Rechercher ou scanner code..."
+                    placeholder="Rechercher par nom ou code..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full pl-10 pr-4 py-3 bg-[#111827] border border-gray-800 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 transition"
@@ -367,7 +414,7 @@ export default function App() {
                   <div
                     key={p.id}
                     onClick={() => addToCart(p)}
-                    className="bg-[#111827] border border-gray-800/80 hover:border-orange-500/80 p-4 rounded-2xl cursor-pointer transition duration-150 hover:-translate-y-0.5 flex flex-col justify-between group"
+                    className={`bg-[#111827] border p-4 rounded-2xl transition duration-150 flex flex-col justify-between group ${p.stock > 0 ? 'border-gray-800/80 hover:border-orange-500/80 cursor-pointer hover:-translate-y-0.5' : 'border-red-900/30 opacity-50 cursor-not-allowed'}`}
                   >
                     <div>
                       <span className="text-[9px] font-extrabold text-gray-500 uppercase tracking-wider">{p.category}</span>
@@ -375,7 +422,9 @@ export default function App() {
                     </div>
                     <div className="mt-4 flex justify-between items-end pt-2 border-t border-gray-800/40">
                       <div>
-                        <span className="text-[10px] text-gray-500 block">Stock: {p.stock}</span>
+                        <span className={`text-[10px] block font-medium ${p.stock === 0 ? 'text-red-400 font-bold' : 'text-gray-500'}`}>
+                          {p.stock === 0 ? 'Rupture' : `Stock: ${p.stock}`}
+                        </span>
                         <span className="text-sm font-extrabold text-orange-400">{p.price.toLocaleString()} F</span>
                       </div>
                       <div className="p-2 bg-gray-800 group-hover:bg-orange-500 text-white rounded-xl transition">
@@ -392,7 +441,7 @@ export default function App() {
                 <div className="absolute inset-0 bg-[#111827]/95 backdrop-blur-md rounded-3xl z-20 flex flex-col items-center justify-center p-6 text-center">
                   <CheckCircle2 className="w-16 h-16 text-emerald-400 mb-3 animate-bounce" />
                   <h3 className="text-xl font-extrabold text-white">Vente Validée !</h3>
-                  <p className="text-xs text-gray-400 mt-1">Ticket enregistré avec succès</p>
+                  <p className="text-xs text-gray-400 mt-1">Ticket enregistré et stock mis à jour</p>
                 </div>
               )}
 
@@ -402,13 +451,13 @@ export default function App() {
                     <Receipt className="w-4 h-4 text-orange-400" /> Ticket Caisse
                   </h2>
                   <span className="text-[10px] text-gray-400 font-bold bg-[#1F2937] px-2.5 py-1 rounded-lg">
-                    {cart.length} Articles
+                    {cart.reduce((sum, item) => sum + item.qty, 0)} Articles
                   </span>
                 </div>
 
                 <div className="divide-y divide-gray-800 max-h-[320px] overflow-y-auto my-3 pr-1">
                   {cart.length === 0 ? (
-                    <div className="py-20 text-center text-gray-500 text-xs">Panier vide.</div>
+                    <div className="py-20 text-center text-gray-500 text-xs">Panier vide. Cliquez sur un article pour l'ajouter.</div>
                   ) : (
                     cart.map(item => (
                       <div key={item.id} className="py-3 flex items-center justify-between gap-2">
@@ -484,7 +533,11 @@ export default function App() {
                         <td className="py-3 text-gray-400">{p.category}</td>
                         <td className="py-3 font-bold text-gray-400">{p.buyPrice?.toLocaleString()} FCFA</td>
                         <td className="py-3 font-bold text-orange-400">{p.price.toLocaleString()} FCFA</td>
-                        <td className="py-3 font-bold text-white">{p.stock} unités</td>
+                        <td className="py-3 font-bold text-white">
+                          <span className={`px-2 py-1 rounded-md text-[11px] ${p.stock <= 5 ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-emerald-500/10 text-emerald-400'}`}>
+                            {p.stock} unités
+                          </span>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -499,7 +552,7 @@ export default function App() {
           <div className="space-y-6">
             <div className="bg-[#111827] border border-gray-800/80 rounded-3xl p-6 shadow-xl">
               <h2 className="text-lg font-extrabold text-white mb-4 flex items-center gap-2">
-                <DollarSign className="w-5 h-5 text-orange-400" /> Enregistrer une Dépense (Électricité, Repas, Réfection)
+                <DollarSign className="w-5 h-5 text-orange-400" /> Enregistrer une Dépense
               </h2>
               <form onSubmit={handleAddExpense} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <input type="text" placeholder="Motif (ex: Facture Senelec, Repas caissiers)" value={expTitle} onChange={e => setExpTitle(e.target.value)} className="px-4 py-2.5 bg-[#1F2937]/50 border border-gray-700/60 rounded-xl text-xs text-white" required />
@@ -536,7 +589,7 @@ export default function App() {
         {activeTab === 'DASHBOARD' && userRole === 'ADMIN' && (
           <div className="space-y-6">
             <h2 className="text-xl font-extrabold text-white">Bilan Financier Global</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="bg-[#111827] border border-gray-800/80 p-5 rounded-2xl">
                 <span className="text-xs text-gray-400 font-bold uppercase">Total Ventes</span>
                 <p className="text-2xl font-extrabold text-white mt-2">{totalSalesAmount.toLocaleString()} FCFA</p>
@@ -546,7 +599,7 @@ export default function App() {
                 <p className="text-2xl font-extrabold text-red-400 mt-2">{totalExpenses.toLocaleString()} FCFA</p>
               </div>
               <div className="bg-gradient-to-br from-orange-500 to-amber-600 p-5 rounded-2xl text-white shadow-xl">
-                <span className="text-xs font-bold uppercase text-orange-100">Bénéfice Net en Caisse</span>
+                <span className="text-xs font-bold uppercase text-orange-100">Solde Net en Caisse</span>
                 <p className="text-2xl font-extrabold mt-2">{(totalSalesAmount - totalExpenses).toLocaleString()} FCFA</p>
               </div>
             </div>
