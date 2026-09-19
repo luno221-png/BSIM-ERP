@@ -3,7 +3,7 @@ import {
   Store, ShoppingCart, Package, LogOut, 
   Search, Plus, Minus, Trash2, CheckCircle2, 
   Receipt, ChevronRight, BarChart3, PlusCircle, Wrench, Smartphone, ShoppingBag, DollarSign,
-  Printer, Share2, Users, Calendar, BadgeCheck, CreditCard, UserPlus, Phone, MapPin, User
+  Printer, Share2, Users, Calendar, BadgeCheck, CreditCard, UserPlus, Phone, MapPin, User, TrendingUp, AlertTriangle
 } from 'lucide-react';
 
 // --- TYPES ---
@@ -163,7 +163,6 @@ export default function App() {
   const handleCheckout = (method: string) => {
     if (cart.length === 0) return;
 
-    // Mise à jour automatique du stock
     setProducts(prev => prev.map(p => {
       const item = cart.find(i => i.id === p.id);
       return item ? { ...p, stock: Math.max(0, p.stock - item.qty) } : p;
@@ -194,7 +193,7 @@ export default function App() {
   const sendWhatsApp = (inv: Invoice) => {
     let cleanPhone = inv.customer.phone.replace(/\s+/g, '').replace('+', '');
     if (!cleanPhone.startsWith('221') && cleanPhone.length === 9) {
-      cleanPhone = '221' + cleanPhone; // Indicatif Sénégal par défaut si nécessaire
+      cleanPhone = '221' + cleanPhone;
     }
 
     let message = `*FACTURE - sama Boutique*\n`;
@@ -351,7 +350,6 @@ export default function App() {
               </button>
             )}
 
-            {/* ONGLET RH EXCLUSIF GERANT PRINCIPAL (ADMIN) */}
             {userRole === 'ADMIN' && (
               <button onClick={() => setActiveTab('HR')} className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-bold transition ${activeTab === 'HR' ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' : 'text-gray-400 hover:bg-gray-800'}`}>
                 <div className="flex items-center gap-3"><Users className="w-4 h-4" /><span>Ressources Humaines</span></div>
@@ -389,7 +387,7 @@ export default function App() {
 
       {/* CONTENU PRINCIPAL */}
       <main className="flex-1 p-6 overflow-y-auto">
-        {/* VUE 1: CAISSE POS + CLIENT + PAIEMENT */}
+        {/* VUE 1: CAISSE POS */}
         {activeTab === 'POS' && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             <div className="lg:col-span-7 xl:col-span-8 space-y-5">
@@ -424,7 +422,6 @@ export default function App() {
                   <Receipt className="w-4 h-4 text-orange-400" /> Informations Vente & Client
                 </h2>
 
-                {/* Saisie Client */}
                 <div className="mt-4 space-y-2 bg-[#1F2937]/40 p-3 rounded-2xl border border-gray-800">
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Coordonnées Client</span>
                   <div className="grid grid-cols-2 gap-2">
@@ -435,7 +432,6 @@ export default function App() {
                   <input type="text" placeholder="Adresse physique" value={customer.address} onChange={e => setCustomer({...customer, address: e.target.value})} className="w-full px-3 py-2 bg-[#0B0F19] border border-gray-700/60 rounded-xl text-xs text-white" />
                 </div>
 
-                {/* Contenu du Panier */}
                 <div className="divide-y divide-gray-800 max-h-[220px] overflow-y-auto my-3 pr-1">
                   {cart.length === 0 ? (
                     <p className="py-10 text-center text-gray-500 text-xs">Panier vide</p>
@@ -458,7 +454,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Encaissement */}
               <div className="border-t border-gray-800 pt-4 space-y-3">
                 <div className="flex justify-between items-baseline">
                   <span className="text-xs text-gray-400 font-bold uppercase">Total À Encaisser</span>
@@ -474,7 +469,7 @@ export default function App() {
           </div>
         )}
 
-        {/* MODAL / VISUALISATION FACTURE IMPRIMABLE */}
+        {/* FACTURE MODALE */}
         {currentInvoice && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-white text-gray-900 rounded-3xl p-6 w-full max-w-lg shadow-2xl space-y-4">
@@ -535,7 +530,7 @@ export default function App() {
           </div>
         )}
 
-        {/* VUE 2: RESSOURCES HUMAINES (RH) - GERANT SEULEMENT */}
+        {/* VUE 2: RESSOURCES HUMAINES (RH) */}
         {activeTab === 'HR' && userRole === 'ADMIN' && (
           <div className="space-y-6">
             <div className="bg-[#111827] border border-gray-800 rounded-3xl p-6">
@@ -593,75 +588,130 @@ export default function App() {
           </div>
         )}
 
-        {/* VUE 3: STOCK */}
+        {/* VUE 3: DASHBOARD & ANALYTICS */}
+        {activeTab === 'DASHBOARD' && userRole === 'ADMIN' && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-[#111827] border border-gray-800 rounded-3xl p-5">
+                <span className="text-xs text-gray-400 font-bold uppercase">Chiffre d'Affaires</span>
+                <p className="text-2xl font-extrabold text-emerald-400 mt-2">{totalSalesAmount.toLocaleString()} FCFA</p>
+              </div>
+              <div className="bg-[#111827] border border-gray-800 rounded-3xl p-5">
+                <span className="text-xs text-gray-400 font-bold uppercase">Total Charges</span>
+                <p className="text-2xl font-extrabold text-red-400 mt-2">{totalExpenses.toLocaleString()} FCFA</p>
+              </div>
+              <div className="bg-[#111827] border border-gray-800 rounded-3xl p-5">
+                <span className="text-xs text-gray-400 font-bold uppercase">Bilan Net (Estimé)</span>
+                <p className={`text-2xl font-extrabold mt-2 ${totalSalesAmount - totalExpenses >= 0 ? 'text-orange-400' : 'text-red-500'}`}>
+                  {(totalSalesAmount - totalExpenses).toLocaleString()} FCFA
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* VUE 4: GESTION DE STOCK */}
         {activeTab === 'INVENTORY' && (
           <div className="space-y-6">
             <div className="bg-[#111827] border border-gray-800 rounded-3xl p-6">
-              <h2 className="text-lg font-extrabold text-white mb-4">Ajouter un Produit</h2>
-              <form onSubmit={handleAddProduct} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <input type="text" placeholder="Nom produit" value={newProdName} onChange={e => setNewProdName(e.target.value)} className="px-4 py-2.5 bg-[#1F2937]/50 border border-gray-700 rounded-xl text-xs text-white" required />
-                <input type="number" placeholder="Prix Vente (FCFA)" value={newProdPrice} onChange={e => setNewProdPrice(e.target.value)} className="px-4 py-2.5 bg-[#1F2937]/50 border border-gray-700 rounded-xl text-xs text-white" required />
-                <input type="number" placeholder="Quantité Stock" value={newProdStock} onChange={e => setNewProdStock(e.target.value)} className="px-4 py-2.5 bg-[#1F2937]/50 border border-gray-700 rounded-xl text-xs text-white" required />
-                <button type="submit" className="sm:col-span-3 bg-orange-500 text-white font-bold py-3 rounded-xl text-xs">Ajouter au Stock</button>
+              <h2 className="text-lg font-extrabold text-white mb-4 flex items-center gap-2">
+                <PlusCircle className="w-5 h-5 text-orange-400" /> Ajouter un Nouvel Article
+              </h2>
+              <form onSubmit={handleAddProduct} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <input type="text" placeholder="Désignation Produit" value={newProdName} onChange={e => setNewProdName(e.target.value)} className="px-4 py-2.5 bg-[#1F2937]/50 border border-gray-700 rounded-xl text-xs text-white" required />
+                <input type="text" placeholder="Catégorie" value={newProdCategory} onChange={e => setNewProdCategory(e.target.value)} className="px-4 py-2.5 bg-[#1F2937]/50 border border-gray-700 rounded-xl text-xs text-white" />
+                <input type="number" placeholder="Prix de Vente (FCFA)" value={newProdPrice} onChange={e => setNewProdPrice(e.target.value)} className="px-4 py-2.5 bg-[#1F2937]/50 border border-gray-700 rounded-xl text-xs text-white" required />
+                <input type="number" placeholder="Prix d'Achat (FCFA)" value={newProdBuyPrice} onChange={e => setNewProdBuyPrice(e.target.value)} className="px-4 py-2.5 bg-[#1F2937]/50 border border-gray-700 rounded-xl text-xs text-white" />
+                <input type="number" placeholder="Quantité en Stock" value={newProdStock} onChange={e => setNewProdStock(e.target.value)} className="px-4 py-2.5 bg-[#1F2937]/50 border border-gray-700 rounded-xl text-xs text-white" required />
+                <button type="submit" className="bg-orange-500 text-white font-bold py-2.5 rounded-xl text-xs">Ajouter au Stock</button>
               </form>
+            </div>
+
+            <div className="bg-[#111827] border border-gray-800 rounded-3xl p-6">
+              <h2 className="text-lg font-extrabold text-white mb-4">Stock Actuel ({products.length} références)</h2>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-gray-800 text-gray-400 uppercase">
+                      <th className="pb-3">Code</th>
+                      <th className="pb-3">Article</th>
+                      <th className="pb-3">Catégorie</th>
+                      <th className="pb-3">Prix Vente</th>
+                      <th className="pb-3">Stock</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800">
+                    {products.map(p => (
+                      <tr key={p.id}>
+                        <td className="py-3 font-mono text-gray-400">{p.code}</td>
+                        <td className="py-3 font-bold text-white">{p.name}</td>
+                        <td className="py-3 text-gray-400">{p.category}</td>
+                        <td className="py-3 font-bold text-orange-400">{p.price.toLocaleString()} F</td>
+                        <td className="py-3 font-bold">{p.stock}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
 
-        {/* VUE 4: DÉPENSES */}
+        {/* VUE 5: DEPENSES */}
         {activeTab === 'EXPENSES' && (
           <div className="space-y-6">
             <div className="bg-[#111827] border border-gray-800 rounded-3xl p-6">
-              <h2 className="text-lg font-extrabold text-white mb-4">Enregistrer une Charge</h2>
+              <h2 className="text-lg font-extrabold text-white mb-4 flex items-center gap-2">
+                <DollarSign className="w-5 h-5 text-orange-400" /> Saisir une Charge / Dépense
+              </h2>
               <form onSubmit={handleAddExpense} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <input type="text" placeholder="Motif" value={expTitle} onChange={e => setExpTitle(e.target.value)} className="px-4 py-2.5 bg-[#1F2937]/50 border border-gray-700 rounded-xl text-xs text-white" required />
-                <input type="number" placeholder="Montant" value={expAmount} onChange={e => setExpAmount(e.target.value)} className="px-4 py-2.5 bg-[#1F2937]/50 border border-gray-700 rounded-xl text-xs text-white" required />
-                <button type="submit" className="bg-red-500 text-white font-bold py-2.5 rounded-xl text-xs">Ajouter Dépense</button>
+                <input type="text" placeholder="Libellé Dépense" value={expTitle} onChange={e => setExpTitle(e.target.value)} className="px-4 py-2.5 bg-[#1F2937]/50 border border-gray-700 rounded-xl text-xs text-white" required />
+                <input type="number" placeholder="Montant (FCFA)" value={expAmount} onChange={e => setExpAmount(e.target.value)} className="px-4 py-2.5 bg-[#1F2937]/50 border border-gray-700 rounded-xl text-xs text-white" required />
+                <button type="submit" className="bg-orange-500 text-white font-bold py-2.5 rounded-xl text-xs">Enregistrer Dépense</button>
               </form>
             </div>
+
+            <div className="bg-[#111827] border border-gray-800 rounded-3xl p-6">
+              <h2 className="text-lg font-extrabold text-white mb-4">Historique des Charges</h2>
+              <div className="divide-y divide-gray-800">
+                {expenses.map(exp => (
+                  <div key={exp.id} className="py-3 flex justify-between items-center text-xs">
+                    <div>
+                      <p className="font-bold text-white">{exp.title}</p>
+                      <p className="text-[10px] text-gray-400">{exp.date} • {exp.category}</p>
+                    </div>
+                    <span className="font-bold text-red-400">-{exp.amount.toLocaleString()} FCFA</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
-        {/* VUE 5: HISTORIQUE DES FACTURES */}
+        {/* VUE 6: HISTORIQUE DES VENTES */}
         {activeTab === 'SALES' && (
           <div className="bg-[#111827] border border-gray-800 rounded-3xl p-6">
-            <h2 className="text-lg font-extrabold text-white mb-4">Historique des Factures Générées</h2>
-            <div className="divide-y divide-gray-800">
-              {sales.map(inv => (
-                <div key={inv.id} className="py-3 flex justify-between items-center text-xs">
-                  <div>
-                    <p className="font-bold text-white">{inv.id} — {inv.customer.firstName} {inv.customer.lastName}</p>
-                    <p className="text-[10px] text-gray-500">{inv.date} à {inv.time} | Tél: {inv.customer.phone}</p>
+            <h2 className="text-lg font-extrabold text-white mb-4">Historique des Ventes & Factures</h2>
+            {sales.length === 0 ? (
+              <p className="text-xs text-gray-500 py-6 text-center">Aucune vente enregistrée pour le moment.</p>
+            ) : (
+              <div className="divide-y divide-gray-800">
+                {sales.map(s => (
+                  <div key={s.id} className="py-3 flex justify-between items-center text-xs">
+                    <div>
+                      <p className="font-bold text-white">{s.id} — {s.customer.firstName} {s.customer.lastName}</p>
+                      <p className="text-[10px] text-gray-400">{s.date} à {s.time} • Règlement: {s.method}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="font-bold text-emerald-400">+{s.total.toLocaleString()} FCFA</span>
+                      <button onClick={() => setCurrentInvoice(s)} className="p-1.5 bg-gray-800 hover:bg-gray-700 rounded-lg text-white">
+                        <Receipt className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <p className="font-extrabold text-orange-400">{inv.total.toLocaleString()} FCFA</p>
-                    <button onClick={() => setCurrentInvoice(inv)} className="p-2 bg-gray-800 rounded-xl text-white"><Printer className="w-3.5 h-3.5" /></button>
-                    <button onClick={() => sendWhatsApp(inv)} className="p-2 bg-emerald-600 rounded-xl text-white"><Share2 className="w-3.5 h-3.5" /></button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* VUE 6: DASHBOARD ADMIN */}
-        {activeTab === 'DASHBOARD' && userRole === 'ADMIN' && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-extrabold text-white">Bilan Général & Paies</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="bg-[#111827] border border-gray-800 p-5 rounded-2xl">
-                <span className="text-xs text-gray-400 font-bold uppercase">Total Ventes</span>
-                <p className="text-2xl font-extrabold text-white mt-2">{totalSalesAmount.toLocaleString()} FCFA</p>
+                ))}
               </div>
-              <div className="bg-[#111827] border border-gray-800 p-5 rounded-2xl">
-                <span className="text-xs text-gray-400 font-bold uppercase">Total Dépenses</span>
-                <p className="text-2xl font-extrabold text-red-400 mt-2">{totalExpenses.toLocaleString()} FCFA</p>
-              </div>
-              <div className="bg-gradient-to-br from-orange-500 to-amber-600 p-5 rounded-2xl text-white">
-                <span className="text-xs font-bold uppercase">Solde Caisse</span>
-                <p className="text-2xl font-extrabold mt-2">{(totalSalesAmount - totalExpenses).toLocaleString()} FCFA</p>
-              </div>
-            </div>
+            )}
           </div>
         )}
       </main>
